@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interactive Text Styler — JavaScript DOM Practice</title>
+
+<style>
+  /* ---------- Theme variables (light = default, dark = .dark on <body>) ---------- */
+  :root {
+    --page-bg:   #eef2f7;
+    --panel-bg:  #ffffff;
+    --text:      #1f2937;
+    --muted:     #6b7280;
+    --btn-bg:    #f1f5f9;
+    --btn-border:#cbd5e1;
+    --btn-hover: #e2e8f0;
+    --accent:    #2563eb;
+    --shadow:    0 8px 24px rgba(15, 23, 42, .08);
+  }
+
+  body.dark {
+    --page-bg:   #0f172a;
+    --panel-bg:  #1e293b;
+    --text:      #e2e8f0;
+    --muted:     #94a3b8;
+    --btn-bg:    #334155;
+    --btn-border:#475569;
+    --btn-hover: #475569;
+    --accent:    #60a5fa;
+    --shadow:    0 8px 24px rgba(0, 0, 0, .45);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 28px 16px 64px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--page-bg);
+    color: var(--text);
+    transition: background .25s ease, color .25s ease;
+  }
+
+  .app { max-width: 920px; margin: 0 auto; }
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.55rem;
+    text-align: center;
+  }
+
+  .subtitle {
+    margin: 0 0 22px;
+    text-align: center;
+    font-size: .9rem;
+    color: var(--muted);
+  }
+
+  .panel {
+    background: var(--panel-bg);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    transition: background .25s ease;
+  }
+
+  /* ---------- Control panel ---------- */
+  .controls {
+    display: grid;
+    gap: 13px;
+    margin-bottom: 22px;
+  }
+
+  .group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .group-label {
+    flex: 0 0 120px;
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  button {
+    font: inherit;
+    font-size: .85rem;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: background .18s, border-color .18s, transform .06s;
+  }
+
+  button:hover  { background: var(--btn-hover); }
+  button:active { transform: scale(.96); }
+
+  /* Highlight the currently selected option */
+  button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .size-label {
+    min-width: 46px;
+    text-align: center;
+    font-size: .85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  /* ---------- The editable text area ---------- */
+  .text-area {
+    background: #ffffff;           /* its own colours — independent of page theme */
+    color: #1f2937;
+    font-size: 18px;               /* keep in sync with BASE_SIZE in the script */
+    line-height: 1.65;
+    padding: 22px;
+    min-height: 170px;
+    border: 2px dashed var(--btn-border);
+    border-radius: 10px;
+    outline: none;
+    cursor: text;
+    transition: background .2s, color .2s;
+  }
+
+  .text-area:focus { border-color: var(--accent); }
+
+  .hint {
+    margin: 10px 2px 0;
+    font-size: .78rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 540px) {
+    .group-label { flex-basis: 100%; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <h1> Interactive Text Styler</h1>
+  <p class="subtitle">Click the buttons to change the appearance of the text below.</p>
+
+  <div class="panel">
+
+    <!-- ============ CONTROLS ============ -->
+    <div class="controls" id="controls">
+
+      <!-- 1. Text colour -->
+      <div class="group">
+        <span class="group-label">Text Color</span>
+        <button data-action="color" data-value="#e11d48">Red</button>
+        <button data-action="color" data-value="#2563eb">Blue</button>
+        <button data-action="color" data-value="#16a34a">Green</button>
+        <button data-action="color" data-value="#7c3aed">Purple</button>
+        <button data-action="color" data-value="#1f2937">Black</button>
+      </div>
+
+      <!-- 2. Font size -->
+      <div class="group">
+        <span class="group-label">Font Size</span>
+        <button data-action="font-size" data-value="-1">A−</button>
+        <span class="size-label" id="sizeLabel">18px</span>
+        <button data-action="font-size" data-value="1">A+</button>
+      </div>
+
+      <!-- 3. Font family -->
+      <div class="group">
+        <span class="group-label">Font Family</span>
+        <button data-action="font-family"
+                data-value="Arial, Helvetica, sans-serif"
+                style="font-family: Arial, Helvetica, sans-serif;">Arial</button>
+        <button data-action="font-family"
+                data-value="Georgia, 'Times New Roman', serif"
+                style="font-family: Georgia, serif;">Georgia</button>
+        <button data-action="font-family"
+                data-value="'Courier New', Courier, monospace"
+                style="font-family: 'Courier New', monospace;">Courier New</button>
+      </div>
+
+      <!-- 4. Text decoration (independent toggles) -->
+      <div class="group">
+        <span class="group-label">Decoration</span>
+        <button data-action="decoration" data-value="underline"><u>Underline</u></button>
+        <button data-action="decoration" data-value="overline"><span style="text-decoration: overline;">Overline</span></button>
+        <button data-action="decoration" data-value="line-through"><s>Line-through</s></button>
+      </div>
+
+      <!-- 5. Bold / Italic -->
+      <div class="group">
+        <span class="group-label">Style</span>
+        <button data-action="bold"   style="font-weight: 700;">Bold</button>
+        <button data-action="italic" style="font-style: italic;">Italic</button>
+      </div>
+
+      <!-- 6. Alignment -->
+      <div class="group">
+        <span class="group-label">Alignment</span>
+        <button data-action="align" data-value="left">Left</button>
+        <button data-action="align" data-value="center">Center</button>
+        <button data-action="align" data-value="right">Right</button>
+      </div>
+
+      <!-- 7. Letter case -->
+      <div class="group">
+        <span class="group-label">Letter Case</span>
+        <button data-action="case" data-value="uppercase">UPPERCASE</button>
+        <button data-action="case" data-value="lowercase">lowercase</button>
+      </div>
+
+      <!-- 8. Background colour of the text box -->
+      <div class="group">
+        <span class="group-label">Background</span>
+        <button data-action="background" data-value="#ffffff">White</button>
+        <button data-action="background" data-value="#fef3c7">Cream</button>
+        <button data-action="background" data-value="#dbeafe">Sky</button>
+        <button data-action="background" data-value="#dcfce7">Mint</button>
+      </div>
+
+      <!-- 9. Theme + 10. Reset -->
+      <div class="group">
+        <span class="group-label">Page</span>
+        <button data-action="toggle-theme" id="themeBtn">🌙 Dark Mode</button>
+        <button data-action="reset">↺ Reset</button>
+      </div>
+
+    </div>
+    <!-- ============ /CONTROLS ============ -->
+
+    <!-- ============ TARGET ELEMENT ============ -->
+    <div class="text-area" id="textArea" contenteditable="true" spellcheck="false">
+      <p>Hello there! 👋 This is the text you can style by Inaam Ullah. Click any button above to change
+      my colour, size, font, decoration, weight, alignment or case — or switch the whole
+      page between dark and light mode.</p>
+      <p>You can also <strong>click inside this box and type your own text</strong>.
+      Press the <em>Reset</em> button whenever you want to start over.</p>
+    </div>
+
+    <p class="hint">Tip: the text box above is editable — type something and then style it.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  //1. ELEMENT REFERENCES //
+  const textArea  = document.getElementById("textArea");
+  const controls  = document.getElementById("controls");
+  const sizeLabel = document.getElementById("sizeLabel");
+  const themeBtn  = document.getElementById("themeBtn");
+
+  //2. SAVED ORIGINAL STATE  (needed by the Reset button)//
+  const originalHTML = textArea.innerHTML;   // snapshot of the starting text
+
+  const BASE_SIZE = 18;    // must match the CSS default font-size
+  const MIN_SIZE  = 10;
+  const MAX_SIZE  = 48;
+  const STEP      = 2;
+
+  let fontSize = BASE_SIZE;
+
+  // Which decorations are currently switched on (keys are real CSS values)
+  const decorations = { "underline": false, "overline": false, "line-through": false };
+
+  //3. HELPER FUNCTIONS//
+
+  //Add / remove the visual "selected" look on a button. //
+  function markActive(button, isActive) {
+    button.classList.toggle("active", isActive);
+  }
+
+  //Remove .active from every button in the same control row. //
+  function clearGroup(button) {
+    button.closest(".group")
+          .querySelectorAll("button.active")
+          .forEach(function (b) { b.classList.remove("active"); });
+  }
+
+  //Increase (delta = +1) or decrease (delta = -1) the font size. //
+  function changeFontSize(delta) {
+    fontSize = Math.min(MAX_SIZE, Math.max(MIN_SIZE, fontSize + delta * STEP));
+    textArea.style.fontSize = fontSize + "px";
+    sizeLabel.textContent   = fontSize + "px";
+  }
+
+  // Rebuild the text-decoration value from the decorations object. //
+  function applyDecorations() {
+    const list = Object.keys(decorations).filter(function (k) { return decorations[k]; });
+    textArea.style.textDecoration = list.length ? list.join(" ") : "none";
+  }
+
+  //Turn dark mode on or off and keep the button label in sync.//
+  function setTheme(isDark) {
+    document.body.classList.toggle("dark", isDark);
+    themeBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+  }
+
+  //Restore the text and every style to its original state. //
+  function resetAll() {
+    textArea.removeAttribute("style");   // wipes ALL inline styles at once
+    textArea.innerHTML = originalHTML;   // restores the original text
+
+    fontSize = BASE_SIZE;
+    sizeLabel.textContent = BASE_SIZE + "px";
+
+    Object.keys(decorations).forEach(function (k) { decorations[k] = false; });
+
+    controls.querySelectorAll("button.active")
+            .forEach(function (b) { b.classList.remove("active"); });
+
+    setTheme(false);                     // back to light mode
+  }
+
+  //4. ONE EVENT LISTENER FOR ALL BUTTONS  (event delegation)//
+  controls.addEventListener("click", function (event) {
+
+    // find the nearest ancestor button that carries a data-action
+    const btn = event.target.closest("button[data-action]");
+    if (!btn) return;                    // click landed on a label / empty space
+
+    switch (btn.dataset.action) {
+
+      // 1. Text colour
+      case "color":
+        textArea.style.color = btn.dataset.value;
+        clearGroup(btn);
+        markActive(btn, true);
+        break;
+
+      //2. Font size
+      case "font-size":
+        changeFontSize(Number(btn.dataset.value));
+        break;
+
+      //3. Font family
+      case "font-family":
+        textArea.style.fontFamily = btn.dataset.value;
+        clearGroup(btn);
+        markActive(btn, true);
+        break;
+
+      //4. Text decoration (each one toggles independently)
+      case "decoration": {
+        const key = btn.dataset.value;           // underline | overline | line-through
+        decorations[key] = !decorations[key];
+        markActive(btn, decorations[key]);
+        applyDecorations();
+        break;
+      }
+
+      //5a. Bold
+      case "bold": {
+        const isBold = textArea.style.fontWeight === "bold";
+        textArea.style.fontWeight = isBold ? "normal" : "bold";
+        markActive(btn, !isBold);
+        break;
+      }
+
+      //5b. Italic
+      case "italic": {
+        const isItalic = textArea.style.fontStyle === "italic";
+        textArea.style.fontStyle = isItalic ? "normal" : "italic";
+        markActive(btn, !isItalic);
+        break;
+      }
+
+      //6. Alignment
+      case "align":
+        textArea.style.textAlign = btn.dataset.value;
+        clearGroup(btn);
+        markActive(btn, true);
+        break;
+
+      //7. Uppercase / lowercase
+      case "case": {
+        const isOn = btn.classList.contains("active");   // clicking again = turn off
+        textArea.style.textTransform = isOn ? "none" : btn.dataset.value;
+        clearGroup(btn);
+        markActive(btn, !isOn);
+        break;
+      }
+
+      //8. Background colour of the text box
+      case "background":
+        textArea.style.backgroundColor = btn.dataset.value;
+        clearGroup(btn);
+        markActive(btn, true);
+        break;
+
+      //9. Dark / light mode
+      case "toggle-theme":
+        setTheme(!document.body.classList.contains("dark"));
+        break;
+
+      //10. Reset
+      case "reset":
+        resetAll();
+        break;
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
